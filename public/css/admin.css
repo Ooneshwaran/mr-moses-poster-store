@@ -1,0 +1,438 @@
+/* ==========================================================================
+   MR MOSES POSTER STORE - ADMIN PORTAL STYLING
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --admin-navy: #0f2b48;
+  --admin-navy-dark: #091a2e;
+  --admin-orange: #f97316;
+  --admin-orange-hover: #ea580c;
+  --admin-bg: #f8fafc;
+  --admin-card: #ffffff;
+  --admin-border: #e2e8f0;
+  --admin-text: #0f172a;
+  --admin-muted: #64748b;
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.08);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+body.admin-body {
+  font-family: var(--font-body);
+  background-color: var(--admin-bg);
+  color: var(--admin-text);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* ===================== AUTH LOGIN VIEW ===================== */
+.auth-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1.5rem;
+  background: radial-gradient(circle at 10% 20%, #f1f5f9 0%, #e2e8f0 90%);
+}
+
+.auth-card {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--admin-border);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-header img {
+  height: 48px;
+  margin: 0 auto 0.75rem;
+}
+
+.auth-header h2 {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--admin-navy);
+}
+
+.auth-header p {
+  font-size: 0.88rem;
+  color: var(--admin-muted);
+}
+
+.auth-alert {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+  display: none;
+}
+
+.auth-alert.show {
+  display: block;
+}
+
+.auth-alert-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.auth-alert-info {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+/* ===================== ADMIN DASHBOARD LAYOUT ===================== */
+.dashboard-wrapper {
+  display: none;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+.dashboard-wrapper.active {
+  display: flex;
+}
+
+.admin-header {
+  background: var(--admin-navy);
+  color: #ffffff;
+  padding: 0.85rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-brand h1 {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.admin-db-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.db-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+.admin-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.admin-user-tag {
+  font-size: 0.88rem;
+  color: #cbd5e1;
+}
+
+/* Dashboard Navigation Tabs */
+.admin-nav-bar {
+  background: #ffffff;
+  border-bottom: 1px solid var(--admin-border);
+  padding: 0 1.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tab-btn {
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--admin-muted);
+  padding: 1rem 1.25rem;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  cursor: pointer;
+}
+
+.tab-btn:hover {
+  color: var(--admin-navy);
+}
+
+.tab-btn.active {
+  color: var(--admin-orange);
+  border-bottom-color: var(--admin-orange);
+}
+
+/* Dashboard Body Container */
+.admin-main {
+  flex-grow: 1;
+  padding: 2rem 1.5rem;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Stat Cards Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--admin-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.35rem;
+}
+
+.stat-value {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--admin-navy);
+}
+
+/* Orders Controls */
+.orders-controls-bar {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--admin-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.85rem;
+  min-width: 260px;
+}
+
+.search-box input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.filter-select {
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  color: var(--admin-text);
+  background: #ffffff;
+}
+
+/* Orders Table */
+.orders-table-wrapper {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--admin-border);
+  box-shadow: var(--shadow-sm);
+  overflow-x: auto;
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.orders-table th {
+  background: var(--admin-bg);
+  color: var(--admin-muted);
+  font-weight: 600;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--admin-border);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.orders-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--admin-border);
+  vertical-align: middle;
+}
+
+.orders-table tr:hover td {
+  background: #fbfcfe;
+}
+
+/* Empty State (Strictly required when no real orders exist) */
+.empty-state {
+  text-align: center;
+  padding: 4rem 1.5rem;
+  color: var(--admin-muted);
+}
+
+.empty-state-icon {
+  width: 64px;
+  height: 64px;
+  color: #94a3b8;
+  margin: 0 auto 1rem;
+}
+
+.empty-state h3 {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--admin-navy);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  font-size: 0.9rem;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+/* Product Pricing Manager Grid */
+.catalog-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.catalog-edit-card {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--admin-border);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.catalog-edit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.catalog-prod-title {
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--admin-navy);
+}
+
+.catalog-prod-cat {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--admin-orange);
+}
+
+/* Order Detail Modal */
+.order-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.detail-section {
+  background: var(--admin-bg);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  border: 1px solid var(--admin-border);
+}
+
+.detail-section h4 {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--admin-navy);
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.whatsapp-action-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.whatsapp-action-box h5 {
+  color: #166534;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+/* Status colors */
+.badge-status {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .order-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

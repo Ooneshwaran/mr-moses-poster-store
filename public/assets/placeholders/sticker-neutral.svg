@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220">
+  <defs>
+    <linearGradient id="sBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fff7ed" />
+      <stop offset="100%" stop-color="#ffedd5" />
+    </linearGradient>
+    <linearGradient id="stGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f97316" />
+      <stop offset="100%" stop-color="#ea580c" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="220" rx="12" fill="url(#sBg)" />
+
+  <!-- Sticker peel illustration -->
+  <g transform="translate(105, 35)">
+    <!-- Shadow -->
+    <rect x="6" y="8" width="100" height="100" rx="20" fill="#0f2b48" opacity="0.1" />
+    <!-- Sticker body -->
+    <rect x="0" y="0" width="100" height="100" rx="20" fill="#ffffff" stroke="#e2e8f0" stroke-width="2" />
+    <!-- Inner graphic -->
+    <circle cx="50" cy="50" r="32" fill="url(#stGrad)" />
+    <!-- Star icon -->
+    <path d="M50 28 L54 42 L68 44 L57 54 L61 68 L50 60 L39 68 L43 54 L32 44 L46 42 Z" fill="#ffffff" />
+    <!-- Peel corner fold -->
+    <path d="M80 0 L100 20 L80 20 Z" fill="#cbd5e1" />
+    <path d="M80 0 L80 20 L100 20 Z" fill="#94a3b8" opacity="0.4" />
+  </g>
+
+  <!-- Tag -->
+  <rect x="20" y="176" width="100" height="26" rx="6" fill="#0f2b48" />
+  <text x="70" y="193" font-family="'Plus Jakarta Sans', sans-serif" font-size="11" font-weight="700" fill="#ffffff" text-anchor="middle">
+    VINYL STICKER
+  </text>
+
+  <!-- Waterproof Badge -->
+  <g transform="translate(225, 25)">
+    <rect x="0" y="0" width="75" height="24" rx="12" fill="#ecfdf5" stroke="#a7f3d0" stroke-width="1" />
+    <text x="37" y="16" font-family="'Plus Jakarta Sans', sans-serif" font-size="9" font-weight="700" fill="#059669" text-anchor="middle">
+      WATERPROOF
+    </text>
+  </g>
+</svg>
