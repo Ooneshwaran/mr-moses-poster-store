@@ -118,6 +118,19 @@ router.post('/', orderLimiter, (req, res) => {
         const subtotal = unitPrice * qty;
         totalPrice += subtotal;
 
+        // If designId is provided, verify and attach design details
+        let designId = item.designId || (req.body.designId && rawItems.length === 1 ? req.body.designId : '');
+        let designName = item.designName || (req.body.designName && rawItems.length === 1 ? req.body.designName : '');
+        let designImage = item.designImage || (req.body.designImage && rawItems.length === 1 ? req.body.designImage : '');
+
+        if (designId) {
+          const design = await repository.getDesignById(designId);
+          if (design) {
+            designName = design.name;
+            designImage = design.imageUrl;
+          }
+        }
+
         verifiedItems.push({
           productId: product.productId,
           name: product.name,
@@ -126,7 +139,10 @@ router.post('/', orderLimiter, (req, res) => {
           quantity: qty,
           unitPrice,
           subtotal,
-          customNotes: item.customNotes || ''
+          customNotes: item.customNotes || '',
+          designId,
+          designName,
+          designImage
         });
       }
 

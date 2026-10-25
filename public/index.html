@@ -637,7 +637,51 @@
       <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.311.045-.698.059-1.146-.086-.299-.096-.681-.225-1.172-.439-2.07-.905-3.414-2.997-3.517-3.136-.104-.139-.844-1.122-.844-2.139 0-1.017.534-1.517.724-1.725.19-.208.414-.26.552-.26.138 0 .276.002.396.008.128.006.297-.049.465.353.173.414.586 1.433.638 1.537.052.104.086.225.017.363-.069.138-.104.225-.208.346-.104.121-.218.271-.311.364-.104.104-.213.217-.092.425.121.208.538.887 1.155 1.437.794.708 1.464.927 1.672 1.031.208.104.329.087.45-.052.121-.139.519-.605.657-.813.138-.208.277-.173.467-.104.19.069 1.21.571 1.417.675.207.104.346.156.397.242.052.087.052.503-.092.908z"/>
     </svg>
     <span>Chat with us</span>
-  </a>
+  <!-- Customer Collection View Modal -->
+  <div class="modal-overlay" id="customer-collection-modal">
+    <div class="modal-container" style="max-width: 980px; width: 95%;">
+      <div class="modal-header" style="align-items: center;">
+        <div style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
+          <button type="button" class="btn btn-outline btn-sm" id="customer-coll-back-btn" style="padding: 0.35rem 0.75rem; font-size: 0.82rem;">
+            &larr; Back to Catalog
+          </button>
+          <div>
+            <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--brand-orange); letter-spacing: 0.5px;" id="customer-coll-badge">POSTERS</div>
+            <h3 class="modal-title" style="margin: 0; font-size: 1.35rem;" id="customer-coll-title">A3 Poster Collection</h3>
+          </div>
+          <div class="coll-price-badge" id="customer-coll-price-tag">₹130</div>
+        </div>
+        <button type="button" class="modal-close-btn" id="customer-coll-close-btn" aria-label="Close collection view">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.5rem; max-height: calc(85vh - 80px); overflow-y: auto;">
+        <!-- Collection Info Subtitle -->
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0; margin-bottom: 1.5rem;" id="customer-coll-subtitle">
+          Browse verified designs for this collection. Select any design to place your order with WhatsApp confirmation.
+        </p>
+
+        <!-- Customer Designs Grid -->
+        <div class="customer-designs-grid" id="customer-designs-grid">
+          <!-- Dynamically populated designs -->
+        </div>
+
+        <!-- Empty Collection Notice (When no designs are published) -->
+        <div class="empty-collection-state" id="customer-collection-empty" style="display: none;">
+          <div class="empty-collection-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+          </div>
+          <h3 class="empty-collection-title">No designs available yet. Please check back later.</h3>
+          <p class="empty-collection-desc">
+            We are currently curating and uploading new artworks for this collection. You can also upload your own photo under <a href="#custom-orders" id="empty-custom-link" style="color: var(--brand-orange); font-weight: 600;">Custom Orders</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Responsive Product Order Modal -->
   <div class="modal-overlay" id="order-modal">
@@ -650,16 +694,23 @@
       <div class="modal-body">
         <!-- Form View -->
         <div id="modal-form-view">
-          <div class="modal-order-summary">
-            <div>
-              <div class="summary-prod-name" id="modal-prod-title">Product Name</div>
-              <div class="summary-prod-size" id="modal-prod-size">Size info</div>
+          <div class="modal-order-summary" style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.85rem;">
+              <img id="modal-selected-design-img" src="" alt="Selected Design" style="display: none; width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border-light); flex-shrink: 0;">
+              <div>
+                <div class="summary-prod-name" id="modal-prod-title">Product Name</div>
+                <div id="modal-selected-design-name" style="font-size: 0.85rem; font-weight: 700; color: var(--brand-orange); display: none;">Design: --</div>
+                <div class="summary-prod-size" id="modal-prod-size">Size info</div>
+              </div>
             </div>
             <div class="summary-prod-price" id="modal-total-display">₹0</div>
           </div>
 
           <form id="customer-order-form" enctype="multipart/form-data">
             <input type="hidden" id="modal-hidden-product-id" name="productId">
+            <input type="hidden" id="modal-hidden-design-id" name="designId">
+            <input type="hidden" id="modal-hidden-design-name" name="designName">
+            <input type="hidden" id="modal-hidden-design-image" name="designImage">
 
             <div class="form-group">
               <label class="form-label">Quantity</label>

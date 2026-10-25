@@ -8,7 +8,10 @@ const orderItemSchema = new mongoose.Schema({
   quantity: { type: Number, required: true, min: 1 },
   unitPrice: { type: Number, required: true, min: 0 },
   subtotal: { type: Number, required: true, min: 0 },
-  customNotes: { type: String, default: '' }
+  customNotes: { type: String, default: '' },
+  designId: { type: String, default: '' },
+  designName: { type: String, default: '' },
+  designImage: { type: String, default: '' }
 }, { _id: false });
 
 const orderStatusHistorySchema = new mongoose.Schema({

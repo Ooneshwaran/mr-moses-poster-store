@@ -53,31 +53,44 @@ All prices are strictly maintained according to the store's official rate sheet 
 
 ### Customer Website (`/`)
 1. **Home**: Hero banner with store tagline, value highlights, and quick action buttons.
-2. **Posters**: Catalog of real poster sizes and prices with instant order buttons.
-3. **Stickers**: Waterproof die-cut stickers.
-4. **Photo Frames**: Solid handcrafted frames with protective acrylic glaze and wall hangers.
-5. **Poster Combo Offers**: Specially priced bundles for galleries and bedrooms.
-6. **Custom Orders**: Dedicated custom design submission form with file attachment and design notes.
-7. **My Orders / Order Tracking**: Secure real-time tracking requiring both **Order ID** and **WhatsApp number** to protect customer privacy.
-8. **Contact Us**: Official WhatsApp (+91 8754126367), operating hours, and inquiry form opening pre-filled WhatsApp messages.
-9. **Instant Order Confirmation**: Unique Order ID (e.g. `MMP-20261023-XXXX`) generated and saved to the database. Pre-filled WhatsApp button to message the store immediately.
-10. **Floating WhatsApp Button**: Accessible from every screen for instant direct assistance.
+2. **Posters**: Catalog of real poster sizes and prices. Clicking any size opens that specific design collection.
+3. **Stickers**: Waterproof die-cut stickers collection.
+4. **Photo Frames**: Solid handcrafted frames collection (12×15, 12×18, 16×24, 20×30).
+5. **Poster Combo Offers**: Specially priced bundles collection (Combo 1, Combo 2, Combo 3).
+6. **Collection Browsing & Design Selection**: Customers browse verified designs uploaded for the selected category. Only designs belonging to that exact collection are shown (never mixed). Empty collections display *"No designs available yet. Please check back later."*
+7. **Instant Design Ordering**: Selecting a design opens the order dialog with design preview, quantity selector, server-calculated totals, address fields, and immediate WhatsApp confirmation link.
+8. **Custom Orders**: Dedicated custom design submission form with file attachment and design notes.
+9. **My Orders / Order Tracking**: Secure real-time tracking requiring both **Order ID** and **WhatsApp number** to protect customer privacy.
+10. **Contact Us**: Official WhatsApp (+91 8754126367), operating hours, and inquiry form opening pre-filled WhatsApp messages.
+11. **Floating WhatsApp Button**: Accessible from every screen for instant direct assistance.
 
 ### Administrator Portal (`/admin`)
 1. **Secure Authentication**: Hashed passwords (bcrypt 12 rounds), JWT tokens, and HttpOnly cookies. Public administrator registration is strictly forbidden.
-2. **Real Orders Management**:
+2. **Orders Management**:
    - Live order metrics: Total Real Orders, New, In Production, Delivered, Total Revenue.
-   - Filters: `All`, `New`, `Confirmed`, `Designing`, `Printing`, `Ready to Ship`, `Shipped`, `Delivered`, `Cancelled`.
+   - Ordered items display with design thumbnail images and design names.
+   - Status & payment updater (`New`, `Confirmed`, `Designing`, `Printing`, `Ready to Ship`, `Shipped`, `Delivered`, `Cancelled`) with timestamped history log.
+   - **WhatsApp Customer Communication**: Buttons to open `wa.me/91...` with pre-filled order receipt and status updates for administrator review.
    - **Empty State**: Displays *"No orders yet"* when the database has no orders. Never inserts fake data!
-   - Order detail drawer showing customer address, ordered items, custom notes, and uploaded file download link.
-   - Status & payment updater with timestamped history log.
-3. **WhatsApp Customer Communication**:
-   - **Send Confirmation on WhatsApp**: Opens `wa.me` with pre-filled order receipt.
-   - **Send Status Update on WhatsApp**: Opens `wa.me` with pre-filled status update.
-   - Administrator explicitly reviews and clicks to send (no fake simulation of background sending).
-4. **Price & Stock Editor**:
-   - Live editing of prices for posters, frames, stickers, and combos.
-   - In Stock / Out of Stock toggles with immediate database sync.
+3. **Product Prices & Availability**:
+   - Single source of truth for product pricing across posters, frames, stickers, and combos.
+   - Live editing of prices with immediate database sync.
+4. **Manage Collections**:
+   - Dedicated tab containing separate collections for all 13 products:
+     - **Posters**: A3 (₹130), A4 (₹70), A5 (₹50), A6 (₹30), 5 × 9 (₹15), 5 × 7 (₹10)
+     - **Stickers**: Small Sticker (₹10)
+     - **Photo Frames**: 12 × 15 (₹550), 12 × 18 (₹700), 16 × 24 (₹1,100), 20 × 30 (₹1,800)
+     - **Combo Offers**: Combo 1 (₹160), Combo 2 (₹120), Combo 3 (₹170)
+   - Allows the administrator to:
+     - Open any collection.
+     - Upload design artwork from the computer (JPG, PNG, WEBP up to 15MB).
+     - Enter design name and optional description.
+     - Live image preview before uploading.
+     - Add and publish design.
+     - Edit design details & replace image.
+     - Toggle design visibility (Hide / Publish).
+     - Delete design with confirmation dialog.
+   - Persistent image storage: Cloudinary cloud storage supported for deployment with automatic fallback to persistent local directory (`/uploads/designs`). Permanent HTTPS / public URLs saved in the database.
 
 ---
 

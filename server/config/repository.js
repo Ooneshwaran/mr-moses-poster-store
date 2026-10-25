@@ -4,6 +4,7 @@ const { isMongoConnected } = require('./db');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const Admin = require('../models/Admin');
+const Design = require('../models/Design');
 const { INITIAL_PRODUCTS } = require('./initialProducts');
 
 // Data directory for local fallback persistence
@@ -22,7 +23,8 @@ const ensureLocalDB = () => {
         updatedAt: new Date().toISOString()
       })),
       orders: [], // STRICT REQUIREMENT: Absolutely NO sample orders!
-      admins: []
+      admins: [],
+      designs: []
     };
     fs.writeFileSync(DB_FILE, JSON.stringify(defaultData, null, 2), 'utf-8');
   }
@@ -32,10 +34,12 @@ const readLocalDB = () => {
   ensureLocalDB();
   try {
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed.designs) parsed.designs = [];
+    return parsed;
   } catch (err) {
     console.error('Error reading local fallback db:', err);
-    return { products: INITIAL_PRODUCTS, orders: [], admins: [] };
+    return { products: INITIAL_PRODUCTS, orders: [], admins: [], designs: [] };
   }
 };
 
@@ -331,6 +335,113 @@ const repository = {
         writeLocalDB(db);
       }
     }
+  },
+
+  // ===================== DESIGNS / COLLECTIONS =====================
+  async getDesigns(collectionId, publishedOnly = false) {
+    if (isMongoConnected()) {
+      const query = {};
+      if (collectionId) query.collectionId = collectionId;
+      if (publishedOnly) query.isPublished = true;
+      return await Design.find(query).sort({ createdAt: -1 }).lean();
+    } else {
+      const db = readLocalDB();
+      let list = db.designs || [];
+      if (collectionId) {
+        list = list.filter(d => d.collectionId === collectionId);
+      }
+      if (publishedOnly) {
+        list = list.filter(d => d.isPublished !== false);
+      }
+      return list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+  },
+
+  async getDesignById(designId) {
+    if (isMongoConnected()) {
+      return await Design.findOne({ designId }).lean();
+    } else {
+      const db = readLocalDB();
+      return (db.designs || []).find(d => d.designId === designId) || null;
+    }
+  },
+
+  async createDesign(designData) {
+    if (isMongoConnected()) {
+      const newDesign = new Design(designData);
+      return await newDesign.save();
+    } else {
+      const db = readLocalDB();
+      if (!db.designs) db.designs = [];
+      const record = {
+        ...designData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      db.designs.push(record);
+      writeLocalDB(db);
+      return record;
+    }
+  },
+
+  async updateDesign(designId, updateData) {
+    if (isMongoConnected()) {
+      return await Design.findOneAndUpdate(
+        { designId },
+        { $set: updateData },
+        { new: true }
+      ).lean();
+    } else {
+      const db = readLocalDB();
+      if (!db.designs) db.designs = [];
+      const idx = db.designs.findIndex(d => d.designId === designId);
+      if (idx === -1) return null;
+      db.designs[idx] = {
+        ...db.designs[idx],
+        ...updateData,
+        updatedAt: new Date().toISOString()
+      };
+      writeLocalDB(db);
+      return db.designs[idx];
+    }
+  },
+
+  async deleteDesign(designId) {
+    if (isMongoConnected()) {
+      return await Design.findOneAndDelete({ designId }).lean();
+    } else {
+      const db = readLocalDB();
+      if (!db.designs) return null;
+      const idx = db.designs.findIndex(d => d.designId === designId);
+      if (idx === -1) return null;
+      const removed = db.designs.splice(idx, 1)[0];
+      writeLocalDB(db);
+      return removed;
+    }
+  },
+
+  async getDesignsCountMap() {
+    const counts = {};
+    if (isMongoConnected()) {
+      const allDesigns = await Design.find({}, { collectionId: 1, isPublished: 1 }).lean();
+      allDesigns.forEach(d => {
+        if (!counts[d.collectionId]) {
+          counts[d.collectionId] = { total: 0, published: 0 };
+        }
+        counts[d.collectionId].total += 1;
+        if (d.isPublished) counts[d.collectionId].published += 1;
+      });
+    } else {
+      const db = readLocalDB();
+      (db.designs || []).forEach(d => {
+        if (!counts[d.collectionId]) {
+          counts[d.collectionId] = { total: 0, published: 0 };
+        }
+        counts[d.collectionId].total += 1;
+        if (d.isPublished !== false) counts[d.collectionId].published += 1;
+      });
+    }
+    return counts;
   }
 };
 

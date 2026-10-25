@@ -84,6 +84,9 @@
       <button type="button" class="tab-btn" data-target="catalog-tab-pane">
         Product Prices &amp; Availability
       </button>
+      <button type="button" class="tab-btn" data-target="collections-tab-pane">
+        Manage Collections
+      </button>
     </nav>
 
     <!-- Main Container -->
@@ -188,6 +191,104 @@
 
         <div class="catalog-editor-grid" id="catalog-editor-container">
           <!-- Dynamically populated real products -->
+        </div>
+      </div>
+
+      <!-- ==================== TAB 3: MANAGE COLLECTIONS ==================== -->
+      <div id="collections-tab-pane" class="tab-pane" style="display: none;">
+        <!-- Collections Master View -->
+        <div id="admin-collections-master-view">
+          <div style="margin-bottom: 1.5rem;">
+            <h2 style="font-family: var(--font-heading); font-size: 1.4rem; color: var(--admin-navy); margin-bottom: 0.25rem;">
+              Manage Collections &amp; Upload Designs
+            </h2>
+            <p style="color: var(--admin-muted); font-size: 0.9rem;">
+              Open any collection below to upload artwork, edit details, replace images, toggle visibility, or delete designs. All prices are synchronized from the database.
+            </p>
+          </div>
+
+          <!-- POSTERS CATEGORY -->
+          <div class="coll-category-section">
+            <div class="coll-category-header">
+              <span class="coll-cat-pill pill-navy">Posters</span>
+              <h3>High-Definition Wall Posters</h3>
+            </div>
+            <div class="collections-cards-grid" id="admin-grid-posters">
+              <!-- A3, A4, A5, A6, 5x9, 5x7 -->
+            </div>
+          </div>
+
+          <!-- STICKERS CATEGORY -->
+          <div class="coll-category-section">
+            <div class="coll-category-header">
+              <span class="coll-cat-pill pill-orange">Stickers</span>
+              <h3>Waterproof &amp; Die-Cut Stickers</h3>
+            </div>
+            <div class="collections-cards-grid" id="admin-grid-stickers">
+              <!-- Small Sticker -->
+            </div>
+          </div>
+
+          <!-- PHOTO FRAMES CATEGORY -->
+          <div class="coll-category-section">
+            <div class="coll-category-header">
+              <span class="coll-cat-pill pill-navy">Photo Frames</span>
+              <h3>Solid Wooden Finish Gallery Frames</h3>
+            </div>
+            <div class="collections-cards-grid" id="admin-grid-frames">
+              <!-- 12x15, 12x18, 16x24, 20x30 -->
+            </div>
+          </div>
+
+          <!-- COMBO OFFERS CATEGORY -->
+          <div class="coll-category-section">
+            <div class="coll-category-header">
+              <span class="coll-cat-pill pill-orange">Combo Offers</span>
+              <h3>Multi-Print Value Bundles</h3>
+            </div>
+            <div class="collections-cards-grid" id="admin-grid-combos">
+              <!-- Combo 1, Combo 2, Combo 3 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Collection Single Detail View (Drilldown) -->
+        <div id="admin-collection-detail-view" style="display: none;">
+          <div class="coll-detail-header-bar">
+            <div style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
+              <button type="button" class="btn btn-outline btn-sm" id="admin-back-to-collections-btn" style="display: inline-flex; align-items: center; gap: 0.35rem;">
+                &larr; Back to Collections
+              </button>
+              <div>
+                <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--admin-orange); letter-spacing: 0.5px;" id="admin-view-coll-category">POSTERS</div>
+                <h2 style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--admin-navy); margin: 0;" id="admin-view-coll-title">A3 Poster</h2>
+              </div>
+              <div class="coll-price-badge" id="admin-view-coll-price">₹130</div>
+            </div>
+
+            <button type="button" class="btn btn-primary btn-sm" id="admin-open-upload-btn" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Upload Design
+            </button>
+          </div>
+
+          <!-- Designs Grid in this collection -->
+          <div class="admin-designs-grid" id="admin-designs-grid">
+            <!-- Dynamically populated designs -->
+          </div>
+
+          <!-- Empty State for Collection -->
+          <div class="empty-state" id="admin-designs-empty-state" style="display: none;">
+            <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <h3>No designs in this collection yet</h3>
+            <p>
+              This collection is currently empty. Click <strong>Upload Design</strong> above to add artwork from your computer.
+            </p>
+          </div>
         </div>
       </div>
     </main>
@@ -298,6 +399,108 @@
               <div id="detail-status-history" style="max-height: 140px; overflow-y: auto;"></div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================
+       UPLOAD / EDIT DESIGN MODAL
+       ====================================================================== -->
+  <div class="modal-overlay" id="design-modal">
+    <div class="modal-container" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="design-modal-title">Upload Design</h3>
+        <button type="button" class="modal-close-btn" id="design-modal-close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <form id="design-upload-form">
+          <input type="hidden" id="design-form-collection-id">
+          <input type="hidden" id="design-form-edit-id">
+
+          <div class="form-group">
+            <label class="form-label" for="design-image-file">
+              Design Image <span class="required" id="design-file-required-mark">*</span>
+            </label>
+            <div class="file-upload-box" id="design-file-dropzone" style="padding: 1.25rem; text-align: center;">
+              <input type="file" id="design-image-file" name="image" accept=".jpg,.jpeg,.png,.webp">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--admin-orange)" stroke-width="2" style="margin: 0 auto 0.5rem; display: block;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <div style="font-size: 0.9rem; font-weight: 700; color: var(--admin-navy);">Click to choose image file from computer</div>
+              <div style="font-size: 0.8rem; color: var(--admin-muted); margin-top: 0.2rem;">JPG, PNG, or WEBP (up to 15MB)</div>
+            </div>
+
+            <!-- Image Preview Box -->
+            <div id="design-preview-container" style="display: none; margin-top: 0.75rem; text-align: center; background: #f8fafc; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--admin-border);">
+              <img id="design-preview-img" src="" alt="Preview" style="max-height: 200px; max-width: 100%; border-radius: 6px; object-fit: contain; box-shadow: var(--shadow-sm);">
+              <div id="design-preview-caption" style="font-size: 0.8rem; color: var(--admin-muted); margin-top: 0.35rem;"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="design-name-input">
+              Design Name <span class="required">*</span>
+            </label>
+            <input type="text" id="design-name-input" class="form-control" placeholder="e.g. Vintage Anime Cyberpunk 01" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="design-desc-input">
+              Description (Optional)
+            </label>
+            <textarea id="design-desc-input" class="form-control" rows="2" placeholder="Optional notes about colors, finish, or details..."></textarea>
+          </div>
+
+          <div class="form-group" style="display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0;">
+            <input type="checkbox" id="design-publish-checkbox" checked style="width: 18px; height: 18px; accent-color: var(--admin-orange); cursor: pointer;">
+            <label for="design-publish-checkbox" style="font-size: 0.88rem; font-weight: 600; color: var(--admin-navy); cursor: pointer; margin: 0;">
+              Publish design (visible on customer website immediately)
+            </label>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+            <button type="button" class="btn btn-outline btn-block" id="design-modal-cancel-btn">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-navy btn-block" id="design-save-btn">
+              Add and Publish Design
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRMATION MODAL -->
+  <div class="modal-overlay" id="design-delete-modal">
+    <div class="modal-container" style="max-width: 420px;">
+      <div class="modal-header">
+        <h3 class="modal-title" style="color: #b91c1c;">Delete Design Confirmation</h3>
+        <button type="button" class="modal-close-btn" id="design-delete-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 1.5rem 1rem;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" style="margin: 0 auto 0.75rem; display: block;">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="15" y1="9" x2="9" y2="15"/>
+          <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>
+        <p style="font-size: 0.95rem; color: var(--admin-text); margin-bottom: 0.5rem;">
+          Are you sure you want to delete <strong id="delete-target-design-name" style="color: var(--admin-navy);">--</strong>?
+        </p>
+        <p style="font-size: 0.82rem; color: var(--admin-muted); margin-bottom: 1.5rem;">
+          This design will be permanently removed from cloud storage and the database.
+        </p>
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="button" class="btn btn-outline btn-block" id="design-delete-cancel-btn">
+            Cancel
+          </button>
+          <button type="button" class="btn btn-block" id="design-delete-confirm-btn" style="background: #dc2626; color: #ffffff;">
+            Yes, Delete Design
+          </button>
         </div>
       </div>
     </div>

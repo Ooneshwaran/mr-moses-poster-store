@@ -7,6 +7,8 @@
 const appState = {
   products: [],
   selectedProduct: null,
+  selectedDesign: null,
+  selectedCollectionProduct: null,
   orderQuantity: 1,
   storeWhatsApp: '8754126367'
 };
@@ -16,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeNavigation();
   loadProducts();
   initializeOrderModal();
+  initializeCustomerCollectionModal();
   initializeCustomOrderForm();
   initializeTrackingForm();
   initializeContactForm();
@@ -83,6 +86,7 @@ async function loadProducts() {
       appState.products = data.products;
       renderProductsByCategory(data.products);
       populateCustomProductDropdown(data.products);
+      checkHashRouting();
     } else {
       showToast('Could not load current product catalog.', 'error');
     }
@@ -91,6 +95,20 @@ async function loadProducts() {
     showToast('Network error while connecting to store catalog.', 'error');
   }
 }
+
+// URL Hash routing to directly open a collection (e.g. #collection/poster-a3)
+function checkHashRouting() {
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#collection/')) {
+    const colId = hash.replace('#collection/', '').trim();
+    const product = appState.products.find(p => p.productId === colId);
+    if (product) {
+      openCustomerCollection(product);
+    }
+  }
+}
+
+window.addEventListener('hashchange', checkHashRouting);
 
 // Render Products into Grids
 function renderProductsByCategory(products) {
@@ -163,7 +181,7 @@ function createProductCard(product) {
           ${isOutOfStock ? 'disabled' : ''}
           data-product-id="${product.productId}"
         >
-          ${isOutOfStock ? 'Out of Stock' : 'Order Now'}
+          ${isOutOfStock ? 'Out of Stock' : 'Select Design / Order Now'}
         </button>
       </div>
     </div>
@@ -171,8 +189,17 @@ function createProductCard(product) {
 
   const orderBtn = card.querySelector('.open-order-btn');
   if (orderBtn && !isOutOfStock) {
-    orderBtn.addEventListener('click', () => {
-      openOrderModal(product);
+    orderBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openCustomerCollection(product);
+    });
+  }
+
+  // Clicking on product card also opens its designs collection
+  if (!isOutOfStock) {
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', () => {
+      openCustomerCollection(product);
     });
   }
 
@@ -288,18 +315,173 @@ function initializeOrderModal() {
   }
 }
 
-function openOrderModal(product) {
+// Initialize Customer Collection Modal
+function initializeCustomerCollectionModal() {
+  const modal = document.getElementById('customer-collection-modal');
+  const closeBtn = document.getElementById('customer-coll-close-btn');
+  const backBtn = document.getElementById('customer-coll-back-btn');
+
+  if (modal) {
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => {
+        modal.classList.remove('open');
+        if (window.location.hash.startsWith('#collection/')) {
+          history.pushState('', document.title, window.location.pathname + window.location.search);
+        }
+      });
+    }
+    if (backBtn) {
+      backBtn.addEventListener('click', () => {
+        modal.classList.remove('open');
+        if (window.location.hash.startsWith('#collection/')) {
+          history.pushState('', document.title, window.location.pathname + window.location.search);
+        }
+      });
+    }
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.remove('open');
+        if (window.location.hash.startsWith('#collection/')) {
+          history.pushState('', document.title, window.location.pathname + window.location.search);
+        }
+      }
+    });
+  }
+}
+
+// Open Collection Page for a specific product size/category
+async function openCustomerCollection(product) {
+  const modal = document.getElementById('customer-collection-modal');
+  const designsGrid = document.getElementById('customer-designs-grid');
+  const emptyState = document.getElementById('customer-collection-empty');
+
+  if (!modal || !designsGrid || !emptyState) return;
+
+  appState.selectedCollectionProduct = product;
+
+  // Set collection title, category pill, and live price from single source of truth in database
+  document.getElementById('customer-coll-badge').textContent = (product.category || 'COLLECTION').toUpperCase();
+  document.getElementById('customer-coll-title').textContent = `${product.name} Collection`;
+  document.getElementById('customer-coll-price-tag').textContent = `₹${product.price}`;
+  document.getElementById('customer-coll-subtitle').textContent = `Dimensions: ${product.dimensions || product.size} • Transparent pricing: ₹${product.price} each. Select any design below to place an order with instant WhatsApp support.`;
+
+  // Set URL hash for linkability
+  try {
+    history.replaceState(null, '', `#collection/${product.productId}`);
+  } catch (e) {}
+
+  // Loading state
+  designsGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 2.5rem; color: var(--text-muted); font-size: 0.95rem;">Loading designs for this collection...</div>';
+  designsGrid.style.display = 'grid';
+  emptyState.style.display = 'none';
+  modal.classList.add('open');
+
+  try {
+    const res = await fetch(`/api/collections/${product.productId}/designs`);
+    const data = await res.json();
+
+    if (data.success && Array.isArray(data.designs)) {
+      const designs = data.designs;
+
+      if (designs.length === 0) {
+        // STRICT REQUIREMENT: Empty state message when no real designs exist
+        designsGrid.innerHTML = '';
+        designsGrid.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      designsGrid.style.display = 'grid';
+      designsGrid.innerHTML = '';
+
+      designs.forEach(design => {
+        const card = document.createElement('div');
+        card.className = 'customer-design-card';
+        card.id = `cust-des-${design.designId}`;
+
+        card.innerHTML = `
+          <div class="customer-design-media">
+            <img src="${design.imageUrl}" alt="${design.name}" loading="lazy">
+          </div>
+          <div class="customer-design-content">
+            <div>
+              <h4 class="customer-design-title">${design.name}</h4>
+              <div class="customer-design-meta">${product.name} • ${product.dimensions || product.size}</div>
+              ${design.description ? `<p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.75rem; line-height: 1.4;">${design.description}</p>` : ''}
+            </div>
+            <div>
+              <div class="customer-design-price-row">
+                <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 600;">Price</span>
+                <span class="customer-design-price">₹${product.price}</span>
+              </div>
+              <button type="button" class="btn btn-primary btn-block select-design-btn" data-design-id="${design.designId}">
+                Select Design / Order Now
+              </button>
+            </div>
+          </div>
+        `;
+
+        card.querySelector('.select-design-btn').addEventListener('click', () => {
+          modal.classList.remove('open');
+          openOrderModal(product, design);
+        });
+
+        designsGrid.appendChild(card);
+      });
+    } else {
+      designsGrid.innerHTML = '';
+      designsGrid.style.display = 'none';
+      emptyState.style.display = 'block';
+    }
+  } catch (err) {
+    console.error('Failed to load collection designs:', err);
+    designsGrid.innerHTML = '';
+    designsGrid.style.display = 'none';
+    emptyState.style.display = 'block';
+  }
+}
+
+function openOrderModal(product, design = null) {
   const modal = document.getElementById('order-modal');
   if (!modal) return;
 
   appState.selectedProduct = product;
+  appState.selectedDesign = design;
   appState.orderQuantity = 1;
 
-  // Set modal details
+  // Set product details
   document.getElementById('modal-prod-title').textContent = product.name;
   document.getElementById('modal-prod-size').textContent = `Size: ${product.dimensions || product.size}`;
   document.getElementById('modal-qty-input').value = 1;
   document.getElementById('modal-hidden-product-id').value = product.productId;
+
+  // Selected design fields
+  const designImgElem = document.getElementById('modal-selected-design-img');
+  const designNameElem = document.getElementById('modal-selected-design-name');
+  const hiddenDesignId = document.getElementById('modal-hidden-design-id');
+  const hiddenDesignName = document.getElementById('modal-hidden-design-name');
+  const hiddenDesignImage = document.getElementById('modal-hidden-design-image');
+
+  if (design) {
+    if (designImgElem) {
+      designImgElem.src = design.imageUrl;
+      designImgElem.style.display = 'block';
+    }
+    if (designNameElem) {
+      designNameElem.textContent = `Design: ${design.name}`;
+      designNameElem.style.display = 'block';
+    }
+    if (hiddenDesignId) hiddenDesignId.value = design.designId;
+    if (hiddenDesignName) hiddenDesignName.value = design.name;
+    if (hiddenDesignImage) hiddenDesignImage.value = design.imageUrl;
+  } else {
+    if (designImgElem) designImgElem.style.display = 'none';
+    if (designNameElem) designNameElem.style.display = 'none';
+    if (hiddenDesignId) hiddenDesignId.value = '';
+    if (hiddenDesignName) hiddenDesignName.value = '';
+    if (hiddenDesignImage) hiddenDesignImage.value = '';
+  }
 
   // Reset form views
   document.getElementById('modal-form-view').style.display = 'block';

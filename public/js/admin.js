@@ -103,6 +103,7 @@ function showDashboardView() {
   loadDashboardStats();
   loadOrders();
   loadProductsEditor();
+  loadAdminCollections();
 }
 
 // System Status & DB badge
@@ -181,6 +182,78 @@ function setupEventListeners() {
   const updateStatusForm = document.getElementById('order-update-status-form');
   if (updateStatusForm) {
     updateStatusForm.addEventListener('submit', handleUpdateOrderStatus);
+  }
+
+  // Manage Collections Event Listeners
+  const backCollBtn = document.getElementById('admin-back-to-collections-btn');
+  if (backCollBtn) {
+    backCollBtn.addEventListener('click', closeAdminCollection);
+  }
+
+  const openUploadBtn = document.getElementById('admin-open-upload-btn');
+  if (openUploadBtn) {
+    openUploadBtn.addEventListener('click', () => openUploadDesignModal(null));
+  }
+
+  const designModal = document.getElementById('design-modal');
+  const designCloseBtn = document.getElementById('design-modal-close');
+  const designCancelBtn = document.getElementById('design-modal-cancel-btn');
+  if (designCloseBtn) designCloseBtn.addEventListener('click', closeUploadDesignModal);
+  if (designCancelBtn) designCancelBtn.addEventListener('click', closeUploadDesignModal);
+  if (designModal) {
+    designModal.addEventListener('click', (e) => {
+      if (e.target === designModal) closeUploadDesignModal();
+    });
+  }
+
+  // Design file input preview
+  const designFileInput = document.getElementById('design-image-file');
+  const previewBox = document.getElementById('design-preview-container');
+  const previewImg = document.getElementById('design-preview-img');
+  const previewCaption = document.getElementById('design-preview-caption');
+
+  if (designFileInput && previewImg && previewBox) {
+    designFileInput.addEventListener('change', () => {
+      if (designFileInput.files && designFileInput.files[0]) {
+        const file = designFileInput.files[0];
+        if (file.size > 15 * 1024 * 1024) {
+          showAdminToast('File is too large. Max size is 15MB.', true);
+          designFileInput.value = '';
+          previewBox.style.display = 'none';
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewImg.src = e.target.result;
+          previewCaption.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+          previewBox.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        previewBox.style.display = 'none';
+      }
+    });
+  }
+
+  // Design form submit
+  const designForm = document.getElementById('design-upload-form');
+  if (designForm) {
+    designForm.addEventListener('submit', handleDesignFormSubmit);
+  }
+
+  // Delete modal listeners
+  const deleteModal = document.getElementById('design-delete-modal');
+  const deleteCloseBtn = document.getElementById('design-delete-modal-close');
+  const deleteCancelBtn = document.getElementById('design-delete-cancel-btn');
+  const deleteConfirmBtn = document.getElementById('design-delete-confirm-btn');
+
+  if (deleteCloseBtn) deleteCloseBtn.addEventListener('click', closeDeleteDesignModal);
+  if (deleteCancelBtn) deleteCancelBtn.addEventListener('click', closeDeleteDesignModal);
+  if (deleteConfirmBtn) deleteConfirmBtn.addEventListener('click', confirmDeleteDesign);
+  if (deleteModal) {
+    deleteModal.addEventListener('click', (e) => {
+      if (e.target === deleteModal) closeDeleteDesignModal();
+    });
   }
 }
 
@@ -293,7 +366,15 @@ async function loadOrders(status = 'All', search = '') {
           minute: '2-digit'
         });
 
-        const itemsSummary = order.items.map(i => `${i.name} (${i.size}) x${i.quantity}`).join(', ');
+        const itemsFormatted = order.items.map(i => {
+          let line = `<strong>${i.name}</strong> (${i.size}) &times; ${i.quantity}`;
+          if (i.designName) {
+            line += `<br><span style="color: var(--admin-orange); font-size: 0.78rem; font-weight: 600;">Design: ${i.designName}</span>`;
+          }
+          return line;
+        }).join('<div style="height: 4px;"></div>');
+
+        const firstDesignImg = order.items.find(i => i.designImage)?.designImage;
 
         tr.innerHTML = `
           <td>
@@ -305,10 +386,15 @@ async function loadOrders(status = 'All', search = '') {
             <div style="font-size: 0.8rem; color: var(--admin-muted);">+91 ${order.customer?.whatsapp || '--'}</div>
           </td>
           <td>
-            <div style="max-width: 260px; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-              ${itemsSummary}
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              ${firstDesignImg ? `
+                <img src="${firstDesignImg}" alt="Design" style="width: 42px; height: 42px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border); flex-shrink: 0;">
+              ` : ''}
+              <div style="max-width: 250px; font-size: 0.85rem; line-height: 1.3;">
+                ${itemsFormatted}
+              </div>
             </div>
-            ${order.customDesignFile ? '<span style="font-size: 0.72rem; color: var(--admin-orange); font-weight: 700;">[Attached File]</span>' : ''}
+            ${order.customDesignFile ? '<span style="font-size: 0.72rem; color: var(--admin-orange); font-weight: 700; display: block; margin-top: 0.25rem;">[Customer Uploaded File]</span>' : ''}
           </td>
           <td>
             <strong style="color: var(--admin-navy);">₹${order.totalPrice}</strong>
@@ -372,15 +458,19 @@ async function openOrderDetail(orderId) {
       customPriceInput.value = order.totalPrice;
     }
 
-    // Items list
+    // Items list with design image and name
     const itemsContainer = document.getElementById('detail-items-list');
     itemsContainer.innerHTML = order.items.map(item => `
-      <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--admin-border);">
-        <div>
-          <strong>${item.name}</strong> (${item.size}) &times; ${item.quantity}
+      <div style="display: flex; gap: 0.75rem; align-items: center; padding: 0.65rem 0; border-bottom: 1px solid var(--admin-border);">
+        ${item.designImage ? `
+          <img src="${item.designImage}" alt="${item.designName || item.name}" style="width: 52px; height: 52px; object-fit: cover; border-radius: 6px; border: 1px solid var(--admin-border); flex-shrink: 0;">
+        ` : ''}
+        <div style="flex: 1;">
+          <div style="font-weight: 700; color: var(--admin-navy);">${item.name} <span style="font-size: 0.82rem; color: var(--admin-muted); font-weight: 500;">(${item.size}) &times; ${item.quantity}</span></div>
+          ${item.designName ? `<div style="font-size: 0.82rem; color: var(--admin-orange); font-weight: 600;">Selected Design: ${item.designName}</div>` : ''}
           ${item.customNotes ? `<div style="font-size: 0.8rem; color: #b45309;">Note: ${item.customNotes}</div>` : ''}
         </div>
-        <div style="font-weight: 700; color: var(--admin-navy);">₹${item.subtotal}</div>
+        <div style="font-weight: 700; color: var(--admin-navy); font-size: 1rem;">₹${item.subtotal}</div>
       </div>
     `).join('');
 
@@ -585,5 +675,346 @@ async function loadProductsEditor() {
     }
   } catch (err) {
     console.error('Catalog error:', err);
+  }
+}
+
+// ==========================================================================
+// MANAGE COLLECTIONS & DESIGNS LOGIC
+// ==========================================================================
+let adminCollections = [];
+let activeAdminCollection = null;
+let activeCollectionDesigns = [];
+let targetDeleteDesign = null;
+
+async function loadAdminCollections() {
+  try {
+    const res = await fetch('/api/collections/admin/all');
+    const data = await res.json();
+
+    if (data.success && Array.isArray(data.collections)) {
+      adminCollections = data.collections;
+      renderAdminCollectionsGrid(adminCollections);
+    }
+  } catch (err) {
+    console.error('Failed to load admin collections:', err);
+  }
+}
+
+function renderAdminCollectionsGrid(collections) {
+  const gridPosters = document.getElementById('admin-grid-posters');
+  const gridStickers = document.getElementById('admin-grid-stickers');
+  const gridFrames = document.getElementById('admin-grid-frames');
+  const gridCombos = document.getElementById('admin-grid-combos');
+
+  if (gridPosters) gridPosters.innerHTML = '';
+  if (gridStickers) gridStickers.innerHTML = '';
+  if (gridFrames) gridFrames.innerHTML = '';
+  if (gridCombos) gridCombos.innerHTML = '';
+
+  collections.forEach(col => {
+    const card = document.createElement('div');
+    card.className = 'admin-collection-card';
+    card.id = `admin-coll-${col.collectionId}`;
+
+    card.innerHTML = `
+      <div>
+        <div class="coll-card-head">
+          <h4 class="coll-card-title">${col.name}</h4>
+          <span class="coll-card-count">${col.totalDesigns || 0} designs</span>
+        </div>
+        <div class="coll-card-size">${col.dimensions || col.size}</div>
+      </div>
+
+      <div class="coll-card-footer">
+        <div class="coll-card-price">₹${col.price}</div>
+        <button type="button" class="btn btn-navy btn-sm open-coll-btn" data-id="${col.collectionId}">
+          Open Collection &rarr;
+        </button>
+      </div>
+    `;
+
+    card.querySelector('.open-coll-btn').addEventListener('click', () => {
+      openAdminCollection(col.collectionId);
+    });
+
+    if (col.category === 'posters' && gridPosters) gridPosters.appendChild(card);
+    else if (col.category === 'stickers' && gridStickers) gridStickers.appendChild(card);
+    else if (col.category === 'frames' && gridFrames) gridFrames.appendChild(card);
+    else if (col.category === 'combos' && gridCombos) gridCombos.appendChild(card);
+  });
+}
+
+async function openAdminCollection(collectionId) {
+  const masterView = document.getElementById('admin-collections-master-view');
+  const detailView = document.getElementById('admin-collection-detail-view');
+
+  activeAdminCollection = adminCollections.find(c => c.collectionId === collectionId) || {
+    collectionId,
+    name: collectionId,
+    category: 'posters',
+    price: 0
+  };
+
+  document.getElementById('admin-view-coll-category').textContent = (activeAdminCollection.category || 'COLLECTION').toUpperCase();
+  document.getElementById('admin-view-coll-title').textContent = `${activeAdminCollection.name} (${activeAdminCollection.dimensions || activeAdminCollection.size})`;
+  document.getElementById('admin-view-coll-price').textContent = `₹${activeAdminCollection.price}`;
+
+  masterView.style.display = 'none';
+  detailView.style.display = 'block';
+
+  await loadAdminCollectionDesigns(collectionId);
+}
+
+function closeAdminCollection() {
+  document.getElementById('admin-collection-detail-view').style.display = 'none';
+  document.getElementById('admin-collections-master-view').style.display = 'block';
+  activeAdminCollection = null;
+  loadAdminCollections(); // Refresh counts
+}
+
+async function loadAdminCollectionDesigns(collectionId) {
+  const designsGrid = document.getElementById('admin-designs-grid');
+  const emptyState = document.getElementById('admin-designs-empty-state');
+
+  try {
+    const res = await fetch(`/api/collections/admin/${collectionId}/designs`);
+    const data = await res.json();
+
+    if (data.success && Array.isArray(data.designs)) {
+      activeCollectionDesigns = data.designs;
+
+      if (activeCollectionDesigns.length === 0) {
+        designsGrid.innerHTML = '';
+        designsGrid.style.display = 'none';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      designsGrid.style.display = 'grid';
+      designsGrid.innerHTML = '';
+
+      activeCollectionDesigns.forEach(design => {
+        const card = document.createElement('div');
+        card.className = 'admin-design-card';
+        card.id = `admin-des-${design.designId}`;
+
+        card.innerHTML = `
+          <div class="admin-design-img-wrap">
+            <img src="${design.imageUrl}" alt="${design.name}" loading="lazy">
+            <span class="admin-design-status-pill ${design.isPublished ? 'status-pill-pub' : 'status-pill-hid'}">
+              ${design.isPublished ? 'Published' : 'Hidden'}
+            </span>
+          </div>
+
+          <div class="admin-design-body">
+            <div>
+              <div class="admin-design-name" title="${design.name}">${design.name}</div>
+              <div class="admin-design-desc">${design.description || 'No description provided.'}</div>
+            </div>
+
+            <div class="admin-design-actions">
+              <button type="button" class="btn btn-outline btn-sm edit-des-btn" style="flex: 1; padding: 0.3rem 0.5rem; font-size: 0.75rem;">
+                Edit
+              </button>
+              <button type="button" class="btn btn-sm toggle-des-btn" style="flex: 1; padding: 0.3rem 0.5rem; font-size: 0.75rem; background: ${design.isPublished ? '#f1f5f9' : '#10b981'}; color: ${design.isPublished ? 'var(--admin-navy)' : '#fff'};">
+                ${design.isPublished ? 'Hide' : 'Publish'}
+              </button>
+              <button type="button" class="btn btn-outline btn-sm delete-des-btn" style="padding: 0.3rem 0.5rem; font-size: 0.75rem; color: #dc2626; border-color: #fecaca;">
+                Delete
+              </button>
+            </div>
+          </div>
+        `;
+
+        card.querySelector('.edit-des-btn').addEventListener('click', () => {
+          openUploadDesignModal(design);
+        });
+
+        card.querySelector('.toggle-des-btn').addEventListener('click', () => {
+          handleToggleDesign(design.designId);
+        });
+
+        card.querySelector('.delete-des-btn').addEventListener('click', () => {
+          promptDeleteDesign(design);
+        });
+
+        designsGrid.appendChild(card);
+      });
+    }
+  } catch (err) {
+    console.error('Error loading designs:', err);
+    showAdminToast('Failed to load designs.', true);
+  }
+}
+
+function openUploadDesignModal(editDesign = null) {
+  const modal = document.getElementById('design-modal');
+  const title = document.getElementById('design-modal-title');
+  const form = document.getElementById('design-upload-form');
+  const colIdInput = document.getElementById('design-form-collection-id');
+  const editIdInput = document.getElementById('design-form-edit-id');
+  const nameInput = document.getElementById('design-name-input');
+  const descInput = document.getElementById('design-desc-input');
+  const pubCheckbox = document.getElementById('design-publish-checkbox');
+  const fileInput = document.getElementById('design-image-file');
+  const reqMark = document.getElementById('design-file-required-mark');
+  const previewBox = document.getElementById('design-preview-container');
+  const previewImg = document.getElementById('design-preview-img');
+  const previewCaption = document.getElementById('design-preview-caption');
+  const saveBtn = document.getElementById('design-save-btn');
+
+  form.reset();
+  colIdInput.value = activeAdminCollection ? activeAdminCollection.collectionId : '';
+
+  if (editDesign) {
+    editIdInput.value = editDesign.designId;
+    title.textContent = `Edit Design: ${editDesign.name}`;
+    nameInput.value = editDesign.name;
+    descInput.value = editDesign.description || '';
+    pubCheckbox.checked = editDesign.isPublished !== false;
+    reqMark.style.display = 'none';
+    fileInput.required = false;
+
+    previewImg.src = editDesign.imageUrl;
+    previewCaption.textContent = 'Current Image (select new file to replace)';
+    previewBox.style.display = 'block';
+    saveBtn.textContent = 'Update Design Details';
+  } else {
+    editIdInput.value = '';
+    title.textContent = `Upload New Design for ${activeAdminCollection ? activeAdminCollection.name : 'Collection'}`;
+    reqMark.style.display = 'inline';
+    fileInput.required = true;
+    previewBox.style.display = 'none';
+    previewImg.src = '';
+    saveBtn.textContent = 'Add and Publish Design';
+  }
+
+  modal.style.display = 'flex';
+}
+
+function closeUploadDesignModal() {
+  document.getElementById('design-modal').style.display = 'none';
+}
+
+async function handleDesignFormSubmit(e) {
+  e.preventDefault();
+  if (!activeAdminCollection) return;
+
+  const editId = document.getElementById('design-form-edit-id').value;
+  const name = document.getElementById('design-name-input').value.trim();
+  const description = document.getElementById('design-desc-input').value.trim();
+  const isPublished = document.getElementById('design-publish-checkbox').checked;
+  const fileInput = document.getElementById('design-image-file');
+  const saveBtn = document.getElementById('design-save-btn');
+
+  if (!name) {
+    showAdminToast('Please enter a design name.', true);
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('name', name);
+  formData.append('description', description);
+  formData.append('isPublished', isPublished);
+
+  if (fileInput.files && fileInput.files[0]) {
+    formData.append('image', fileInput.files[0]);
+  } else if (!editId) {
+    showAdminToast('Please select an image file to upload.', true);
+    return;
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = editId ? 'Updating...' : 'Uploading & Publishing...';
+
+  try {
+    let url = `/api/collections/admin/${activeAdminCollection.collectionId}/designs`;
+    let method = 'POST';
+
+    if (editId) {
+      url = `/api/collections/admin/designs/${editId}`;
+      method = 'PUT';
+    }
+
+    const res = await fetch(url, {
+      method,
+      body: formData
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showAdminToast(data.message || 'Design saved successfully!', false);
+      closeUploadDesignModal();
+      loadAdminCollectionDesigns(activeAdminCollection.collectionId);
+    } else {
+      showAdminToast(data.error || 'Failed to save design.', true);
+    }
+  } catch (err) {
+    console.error('Error saving design:', err);
+    showAdminToast('Network error while saving design.', true);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = editId ? 'Update Design Details' : 'Add and Publish Design';
+  }
+}
+
+async function handleToggleDesign(designId) {
+  try {
+    const res = await fetch(`/api/collections/admin/designs/${designId}/toggle`, {
+      method: 'PATCH'
+    });
+    const data = await res.json();
+    if (data.success) {
+      showAdminToast(data.message, false);
+      if (activeAdminCollection) {
+        loadAdminCollectionDesigns(activeAdminCollection.collectionId);
+      }
+    } else {
+      showAdminToast(data.error || 'Failed to update design status.', true);
+    }
+  } catch (err) {
+    showAdminToast('Network error updating design status.', true);
+  }
+}
+
+function promptDeleteDesign(design) {
+  targetDeleteDesign = design;
+  document.getElementById('delete-target-design-name').textContent = `"${design.name}"`;
+  document.getElementById('design-delete-modal').style.display = 'flex';
+}
+
+function closeDeleteDesignModal() {
+  document.getElementById('design-delete-modal').style.display = 'none';
+  targetDeleteDesign = null;
+}
+
+async function confirmDeleteDesign() {
+  if (!targetDeleteDesign) return;
+
+  const btn = document.getElementById('design-delete-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Deleting...';
+
+  try {
+    const res = await fetch(`/api/collections/admin/designs/${targetDeleteDesign.designId}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showAdminToast(data.message || 'Design deleted.', false);
+      closeDeleteDesignModal();
+      if (activeAdminCollection) {
+        loadAdminCollectionDesigns(activeAdminCollection.collectionId);
+      }
+    } else {
+      showAdminToast(data.error || 'Failed to delete design.', true);
+    }
+  } catch (err) {
+    showAdminToast('Network error while deleting design.', true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Yes, Delete Design';
   }
 }
