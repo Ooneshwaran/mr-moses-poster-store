@@ -1,11 +1,17 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const crypto = require('crypto');
 
-const TEMP_DIR = path.join(__dirname, '../../uploads/temp');
-if (!fs.existsSync(TEMP_DIR)) {
-  fs.mkdirSync(TEMP_DIR, { recursive: true });
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const TEMP_DIR = isServerless ? os.tmpdir() : path.join(__dirname, '../../uploads/temp');
+try {
+  if (!fs.existsSync(TEMP_DIR)) {
+    fs.mkdirSync(TEMP_DIR, { recursive: true });
+  }
+} catch (err) {
+  // Gracefully handle read-only environments
 }
 
 const MIME_MAP = {

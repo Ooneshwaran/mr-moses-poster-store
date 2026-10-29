@@ -6,6 +6,12 @@ const { INITIAL_PRODUCTS } = require('./initialProducts');
 let isMongoConnected = false;
 
 const connectDB = async () => {
+  // Reuse existing connection if already connected (essential for Vercel serverless warm invocations)
+  if (mongoose.connection && mongoose.connection.readyState >= 1) {
+    isMongoConnected = true;
+    return true;
+  }
+
   const uri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/mrmoses';
 
   try {

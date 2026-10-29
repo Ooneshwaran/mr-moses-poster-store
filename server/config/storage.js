@@ -3,8 +3,12 @@ const path = require('path');
 const fs = require('fs');
 
 const DESIGNS_DIR = path.join(__dirname, '../../uploads/designs');
-if (!fs.existsSync(DESIGNS_DIR)) {
-  fs.mkdirSync(DESIGNS_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(DESIGNS_DIR)) {
+    fs.mkdirSync(DESIGNS_DIR, { recursive: true });
+  }
+} catch (err) {
+  // Gracefully handle read-only environments (e.g. Vercel serverless)
 }
 
 // Check if Cloudinary is configured via environment variables

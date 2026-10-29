@@ -8,7 +8,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const { apiLimiter } = require('./middleware/rateLimiter');
-const { getMongoStatus } = require('./config/db');
+const { connectDB, getMongoStatus } = require('./config/db');
 
 const authRoutes = require('./routes/auth.routes');
 const productRoutes = require('./routes/product.routes');
@@ -44,6 +44,16 @@ app.use(cookieParser());
 // Static public directory & persistent uploads directory
 app.use(express.static(path.join(__dirname, '../public')));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Ensure database connection is ready for API routes (essential for Vercel serverless)
+app.use('/api', async (req, res, next) => {
+  try {
+    await connectDB();
+  } catch (dbErr) {
+    console.warn('[Database] API connection warning:', dbErr.message);
+  }
+  next();
+});
 
 // Rate-limited API routes
 app.use('/api', apiLimiter);
