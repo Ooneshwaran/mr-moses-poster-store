@@ -388,7 +388,7 @@ async function loadOrders(status = 'All', search = '') {
           <td>
             <div style="display: flex; align-items: center; gap: 0.6rem;">
               ${firstDesignImg ? `
-                <img src="${firstDesignImg}" alt="Design" style="width: 42px; height: 42px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border); flex-shrink: 0;">
+                <img src="${firstDesignImg}" alt="Design" style="width: 42px; height: 42px; object-fit: cover; border-radius: 4px; border: 1px solid var(--admin-border); flex-shrink: 0;" onerror="this.onerror=null; this.src='/assets/placeholders/poster-neutral.svg';">
               ` : ''}
               <div style="max-width: 250px; font-size: 0.85rem; line-height: 1.3;">
                 ${itemsFormatted}
@@ -463,7 +463,7 @@ async function openOrderDetail(orderId) {
     itemsContainer.innerHTML = order.items.map(item => `
       <div style="display: flex; gap: 0.75rem; align-items: center; padding: 0.65rem 0; border-bottom: 1px solid var(--admin-border);">
         ${item.designImage ? `
-          <img src="${item.designImage}" alt="${item.designName || item.name}" style="width: 52px; height: 52px; object-fit: cover; border-radius: 6px; border: 1px solid var(--admin-border); flex-shrink: 0;">
+          <img src="${item.designImage}" alt="${item.designName || item.name}" style="width: 52px; height: 52px; object-fit: cover; border-radius: 6px; border: 1px solid var(--admin-border); flex-shrink: 0;" onerror="this.onerror=null; this.src='/assets/placeholders/poster-neutral.svg';">
         ` : ''}
         <div style="flex: 1;">
           <div style="font-weight: 700; color: var(--admin-navy);">${item.name} <span style="font-size: 0.82rem; color: var(--admin-muted); font-weight: 500;">(${item.size}) &times; ${item.quantity}</span></div>
@@ -603,6 +603,10 @@ async function loadProductsEditor() {
         card.className = 'catalog-edit-card';
         card.id = `edit-card-${prod.productId}`;
 
+        const cat = prod.category || 'posters';
+        const defaultPlaceholder = `/assets/placeholders/${cat === 'frames' ? 'frame' : cat === 'stickers' ? 'sticker' : cat === 'combos' ? 'combo' : 'poster'}-neutral.svg`;
+        const currentImg = (prod.imageUrl && prod.imageUrl.trim()) ? prod.imageUrl.trim() : defaultPlaceholder;
+
         card.innerHTML = `
           <div class="catalog-edit-header">
             <div>
@@ -612,6 +616,22 @@ async function loadProductsEditor() {
             </div>
             <div>
               <span class="badge ${prod.inStock ? 'badge-stock' : 'badge-orange'}">${prod.inStock ? 'In Stock' : 'Out of Stock'}</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 0.75rem; padding: 0.5rem; background: var(--admin-bg); border-radius: 6px; border: 1px solid var(--admin-border);">
+            <img src="${currentImg}" alt="${prod.name}" class="prod-preview-thumb" style="width: 50px; height: 50px; object-fit: contain; border-radius: 4px; background: #fff;" onerror="this.onerror=null; this.src='${defaultPlaceholder}';">
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                <label style="font-size: 0.75rem; font-weight: 700; color: var(--admin-muted); margin: 0;">
+                  Product Image
+                </label>
+                <button type="button" class="btn btn-outline btn-sm upload-file-btn" style="font-size: 0.7rem; padding: 0.15rem 0.45rem;">
+                  Upload File
+                </button>
+                <input type="file" class="prod-file-upload-input" accept=".jpg,.jpeg,.png,.webp" style="display: none;">
+              </div>
+              <input type="text" class="form-control prod-image-input" placeholder="Paste URL or click Upload File" value="${prod.imageUrl || ''}" style="padding: 0.35rem 0.6rem; font-size: 0.8rem;">
             </div>
           </div>
 
@@ -636,14 +656,53 @@ async function loadProductsEditor() {
           </div>
 
           <button type="button" class="btn btn-navy btn-block btn-sm save-prod-btn">
-            Save Price &amp; Stock
+            Save Changes
           </button>
         `;
+
+        const fileBtn = card.querySelector('.upload-file-btn');
+        const fileInput = card.querySelector('.prod-file-upload-input');
+        const imgInput = card.querySelector('.prod-image-input');
+        const thumbImg = card.querySelector('.prod-preview-thumb');
+
+        if (fileBtn && fileInput) {
+          fileBtn.addEventListener('click', () => fileInput.click());
+          fileInput.addEventListener('change', async () => {
+            if (!fileInput.files || !fileInput.files[0]) return;
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fileBtn.disabled = true;
+            fileBtn.textContent = 'Uploading...';
+
+            try {
+              const uploadRes = await fetch(`/api/products/${prod.productId}/image`, {
+                method: 'POST',
+                body: formData
+              });
+              const uploadData = await uploadRes.json();
+              if (uploadData.success && uploadData.imageUrl) {
+                imgInput.value = uploadData.imageUrl;
+                thumbImg.src = uploadData.imageUrl;
+                showAdminToast(`Uploaded image for "${prod.name}"!`, false);
+              } else {
+                showAdminToast(uploadData.error || 'Failed to upload product image.', true);
+              }
+            } catch (err) {
+              showAdminToast('Network error during image upload.', true);
+            } finally {
+              fileBtn.disabled = false;
+              fileBtn.textContent = 'Upload File';
+            }
+          });
+        }
 
         const saveBtn = card.querySelector('.save-prod-btn');
         saveBtn.addEventListener('click', async () => {
           const newPrice = card.querySelector('.prod-price-input').value;
           const inStock = card.querySelector('.prod-stock-select').value === 'true';
+          const imageUrl = card.querySelector('.prod-image-input').value.trim();
 
           saveBtn.disabled = true;
           saveBtn.textContent = 'Saving...';
@@ -652,7 +711,7 @@ async function loadProductsEditor() {
             const updateRes = await fetch(`/api/products/${prod.productId}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ price: Number(newPrice), inStock })
+              body: JSON.stringify({ price: Number(newPrice), inStock, imageUrl })
             });
             const updateData = await updateRes.json();
 
@@ -799,9 +858,12 @@ async function loadAdminCollectionDesigns(collectionId) {
         card.className = 'admin-design-card';
         card.id = `admin-des-${design.designId}`;
 
+        const cat = activeAdminCollection ? activeAdminCollection.category : 'posters';
+        const placeholder = `/assets/placeholders/${cat === 'frames' ? 'frame' : cat === 'stickers' ? 'sticker' : cat === 'combos' ? 'combo' : 'poster'}-neutral.svg`;
+
         card.innerHTML = `
           <div class="admin-design-img-wrap">
-            <img src="${design.imageUrl}" alt="${design.name}" loading="lazy">
+            <img src="${design.imageUrl}" alt="${design.name}" loading="lazy" onerror="this.onerror=null; this.src='${placeholder}';">
             <span class="admin-design-status-pill ${design.isPublished ? 'status-pill-pub' : 'status-pill-hid'}">
               ${design.isPublished ? 'Published' : 'Hidden'}
             </span>

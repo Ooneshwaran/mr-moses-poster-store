@@ -43,6 +43,10 @@ const productSchema = new mongoose.Schema({
   badge: {
     type: String,
     default: ''
+  },
+  imageUrl: {
+    type: String,
+    default: ''   // Optional: admin-uploaded product thumbnail. Empty = use category placeholder.
   }
 }, {
   timestamps: true

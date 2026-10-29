@@ -137,18 +137,35 @@ function renderProductsByCategory(products) {
   });
 }
 
-// Placeholder Image Mapping
+// Category-specific placeholder SVG paths
+const CATEGORY_PLACEHOLDERS = {
+  posters:  '/assets/placeholders/poster-neutral.svg',
+  frames:   '/assets/placeholders/frame-neutral.svg',
+  stickers: '/assets/placeholders/sticker-neutral.svg',
+  combos:   '/assets/placeholders/combo-neutral.svg'
+};
+
+/**
+ * Returns the correct category placeholder SVG path for a product.
+ * Used as the src when no real image is set, and as the onerror fallback.
+ */
 function getPlaceholderImage(product) {
-  if (product.category === 'posters') {
-    return '/assets/placeholders/poster-neutral.svg';
-  } else if (product.category === 'frames') {
-    return '/assets/placeholders/frame-neutral.svg';
-  } else if (product.category === 'stickers') {
-    return '/assets/placeholders/sticker-neutral.svg';
-  } else if (product.category === 'combos') {
-    return '/assets/placeholders/combo-neutral.svg';
+  return CATEGORY_PLACEHOLDERS[product.category] || CATEGORY_PLACEHOLDERS.posters;
+}
+
+/**
+ * Returns the best available image src for a product card:
+ *   - The admin-uploaded product.imageUrl if it is a non-empty string
+ *   - Otherwise the category placeholder SVG
+ */
+function getProductImageSrc(product) {
+  if (product.imageUrl && typeof product.imageUrl === 'string' && product.imageUrl.trim() !== '') {
+    return product.imageUrl.trim();
   }
-  return '/assets/placeholders/poster-neutral.svg';
+  if (product.featuredImage && typeof product.featuredImage === 'string' && product.featuredImage.trim() !== '') {
+    return product.featuredImage.trim();
+  }
+  return getPlaceholderImage(product);
 }
 
 // Create a Product Card Element
@@ -157,13 +174,21 @@ function createProductCard(product) {
   card.className = 'product-card';
   card.id = `card-${product.productId}`;
 
-  const imageSrc = getPlaceholderImage(product);
+  const imageSrc    = getProductImageSrc(product);    // real image or placeholder
+  const placeholder = getPlaceholderImage(product);   // always the category SVG
+  const hasRealImg  = imageSrc !== placeholder;        // true when a real image URL is set
   const isOutOfStock = product.inStock === false;
 
   card.innerHTML = `
     ${product.badge ? `<div class="product-card-badge"><span class="badge ${product.badge.includes('Combo') || product.badge.includes('Value') ? 'badge-orange' : 'badge-navy'}">${product.badge}</span></div>` : ''}
     <div class="product-media">
-      <img src="${imageSrc}" alt="${product.name} specifications diagram" loading="lazy">
+      <img
+        src="${imageSrc}"
+        alt="${product.name}"
+        loading="lazy"
+        class="${hasRealImg ? 'product-img-real' : 'product-img-placeholder'}"
+        onerror="this.onerror=null; this.src='${placeholder}'; this.classList.remove('product-img-real'); this.classList.add('product-img-placeholder');"
+      >
     </div>
     <div class="product-info">
       <span class="product-category-label">${product.category}</span>
@@ -186,6 +211,7 @@ function createProductCard(product) {
       </div>
     </div>
   `;
+
 
   const orderBtn = card.querySelector('.open-order-btn');
   if (orderBtn && !isOutOfStock) {
@@ -400,9 +426,18 @@ async function openCustomerCollection(product) {
         card.className = 'customer-design-card';
         card.id = `cust-des-${design.designId}`;
 
+        // Determine the placeholder for this collection's product category
+        const collCategory = appState.selectedCollectionProduct ? appState.selectedCollectionProduct.category : 'posters';
+        const collPlaceholder = CATEGORY_PLACEHOLDERS[collCategory] || CATEGORY_PLACEHOLDERS.posters;
+
         card.innerHTML = `
           <div class="customer-design-media">
-            <img src="${design.imageUrl}" alt="${design.name}" loading="lazy">
+            <img
+              src="${design.imageUrl}"
+              alt="${design.name}"
+              loading="lazy"
+              onerror="this.onerror=null; this.src='${collPlaceholder}';"
+            >
           </div>
           <div class="customer-design-content">
             <div>
@@ -465,6 +500,12 @@ function openOrderModal(product, design = null) {
 
   if (design) {
     if (designImgElem) {
+      const collCat = product ? product.category : 'posters';
+      const collPlaceholder = CATEGORY_PLACEHOLDERS[collCat] || CATEGORY_PLACEHOLDERS.posters;
+      designImgElem.onerror = function() {
+        this.onerror = null;
+        this.src = collPlaceholder;
+      };
       designImgElem.src = design.imageUrl;
       designImgElem.style.display = 'block';
     }

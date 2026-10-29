@@ -442,6 +442,27 @@ const repository = {
       });
     }
     return counts;
+  },
+
+  async getFeaturedDesignMap() {
+    const map = {};
+    if (isMongoConnected()) {
+      const allDesigns = await Design.find({ isPublished: true }).sort({ createdAt: -1 }).lean();
+      allDesigns.forEach(d => {
+        if (!map[d.collectionId]) {
+          map[d.collectionId] = d.imageUrl;
+        }
+      });
+    } else {
+      const db = readLocalDB();
+      const designs = (db.designs || []).filter(d => d.isPublished !== false).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      designs.forEach(d => {
+        if (!map[d.collectionId]) {
+          map[d.collectionId] = d.imageUrl;
+        }
+      });
+    }
+    return map;
   }
 };
 
